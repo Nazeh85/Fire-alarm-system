@@ -47,11 +47,13 @@ static void ip_event_handler(void *arg, esp_event_base_t event_base, int32_t eve
 }
 
 void wifi_handler_start(wifi_init_param_t *param){
-    PRINTFC_WIFI_HANLDER("WIFI Handler is starting");
+    PRINTFC_WIFI_HANDLER("WIFI Handler is starting");
     PRINTFC_WIFI_HANDLER("Using ssid: %s%s%s", green, param->ssid, reset);
     PRINTFC_WIFI_HANDLER("Using password: %s%s%s", green, param->password, reset);
     PRINTFC_WIFI_HANDLER("Init network interface");
     ESP_ERROR_CHECK(esp_netif_init());
+    ESP_ERROR_CHECK(esp_event_loop_create_default()); 
+     
 
     esp_netif_t *netif = esp_netif_create_default_wifi_sta();
 
