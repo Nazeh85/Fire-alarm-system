@@ -62,7 +62,7 @@ void wifi_handler_start(wifi_init_param_t *param){
     esp_event_handler_instance_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &ip_event_handler, param, NULL);
 
     wifi_config_t wifi_config = {0};
-    memcpy(wifi_config.sta.ssid, param->ssid, sizof(wifi_config.sta.ssid));
+    memcpy(wifi_config.sta.ssid, param->ssid, sizeof(wifi_config.sta.ssid));
     memcpy(wifi_config.sta.password, param->password, sizeof(wifi_config.sta.password));
 
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
