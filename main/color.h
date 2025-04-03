@@ -15,4 +15,12 @@ static const char *reset = "\033[0m";
 
 #define PRINTFC(color, format, ...) printf("%s" format "%s", color, ##__VA_ARGS__, reset)
 
+#define PRINTFC_MAIN(format, ...)  \
+    PRINTFC(yellow, "Main: ");     \
+    printf(format, ##__VA_ARGS__); \
+    printf("\n")
+
+
+
+
 #endif
