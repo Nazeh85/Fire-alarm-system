@@ -25,3 +25,28 @@ static esp_err_t initialize_wifi() {
     return ESP_OK;
 }
 
+void app_main(void)
+{
+    ESP_LOGI("Main", "Initializing NVS...");
+    esp_err_t ret = nvs_flash_init();
+    if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+        ESP_ERROR_CHECK(nvs_flash_erase());
+        ret = nvs_flash_init();
+    }
+    ESP_ERROR_CHECK(ret);
+
+    PRINTFC_MAIN("Wi-Fi Initialization");
+    if (initialize_wifi() != ESP_OK) {
+        return;
+    }
+
+    PRINTFC_WIFI_HANDLER("Waiting for Wi-Fi connection...");
+    EventBits_t bits = xEventGroupWaitBits(
+        wifi_event_group, WIFI_CONNECTED_BIT | WIFI_HAS_IP_BIT, pdFALSE, pdTRUE, pdMS_TO_TICKS(30000));
+    if (!(bits & WIFI_HAS_IP_BIT)) {
+        PRINTFC_MAIN("Wi-Fi connection timeout. Exiting.");
+        return;
+    }
+    PRINTFC_MAIN("Wi-Fi connected and IP acquired.");
+    
+}
