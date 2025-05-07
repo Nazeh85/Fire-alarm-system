@@ -21,9 +21,15 @@ static const char *reset = "\033[0m";
     printf("\n")
 
 #define PRINTFC_WIFI_HANDLER(format, ...) \
-    PRINTFC(magenta, "WiFi Handler: ");   \
+    PRINTFC(cyan, "WiFi Handler: ");   \
     printf(format, ##__VA_ARGS__);        \
     printf("\n")
+
+#define PRINTFC_DHT(format, ...) \
+    PRINTFC(white, "DHT: ");       \
+    printf(format, ##__VA_ARGS__);  \
+    printf("\n")
+
 
 
 #endif
