@@ -6,6 +6,11 @@
 #include "wifi_handler.h"
 #include "nvs_flash.h"
 #include "color.h"
+#include "esp_system.h"
+#include "freertos/task.h"
+#include "driver/gpio.h"
+#include "esp_event.h"
+#include "dht.h"
 
 // Globala variabler
 EventGroupHandle_t wifi_event_group;
