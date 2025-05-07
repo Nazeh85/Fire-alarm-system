@@ -12,6 +12,13 @@
 #include "esp_event.h"
 #include "dht.h"
 
+#define DHT_GPIO 18
+#define DHT_TYPE DHT_TYPE_DHT22
+
+#define RED_LED_GPIO 25
+#define GREEN_LED_GPIO 26
+#define BUZZER_GPIO 27
+
 // Globala variabler
 EventGroupHandle_t wifi_event_group;
 wifi_init_param_t w_param = {
