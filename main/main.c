@@ -26,6 +26,18 @@ wifi_init_param_t w_param = {
     .password = CONFIG_WIFI_PASSWORD,
 };
 
+static void configure_gpio()
+{
+    gpio_reset_pin(RED_LED_GPIO);
+    gpio_set_direction(RED_LED_GPIO, GPIO_MODE_OUTPUT);
+
+    gpio_reset_pin(GREEN_LED_GPIO);
+    gpio_set_direction(GREEN_LED_GPIO, GPIO_MODE_OUTPUT);
+
+    gpio_reset_pin(BUZZER_GPIO);
+    gpio_set_direction(BUZZER_GPIO, GPIO_MODE_OUTPUT);
+}
+
 static esp_err_t initialize_wifi() {
     wifi_event_group = xEventGroupCreate();
     if (wifi_event_group == NULL) {
