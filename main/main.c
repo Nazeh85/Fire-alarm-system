@@ -41,7 +41,7 @@ static void configure_gpio()
 static esp_err_t initialize_wifi() {
     wifi_event_group = xEventGroupCreate();
     if (wifi_event_group == NULL) {
-        PRINTFC_MAIN("Failed to create Wi-Fi event group");
+        PRINTFC_WIFI_HANDLER("Failed to create Wi-Fi event group");
         return ESP_FAIL;
     }
     w_param.wifi_event_group = wifi_event_group;
@@ -51,7 +51,7 @@ static esp_err_t initialize_wifi() {
 
 void app_main(void)
 {
-    ESP_LOGI("Main", "Initializing NVS...");
+    PRINTFC_MAIN("Main", "Initializing NVS...");
     esp_err_t ret = nvs_flash_init();
     if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
         ESP_ERROR_CHECK(nvs_flash_erase());
@@ -59,7 +59,7 @@ void app_main(void)
     }
     ESP_ERROR_CHECK(ret);
 
-    PRINTFC_MAIN("Wi-Fi Initialization");
+    PRINTFC_WIFI_HANDLER("Wi-Fi Initialization");
     if (initialize_wifi() != ESP_OK) {
         return;
     }
@@ -68,9 +68,9 @@ void app_main(void)
     EventBits_t bits = xEventGroupWaitBits(
         wifi_event_group, WIFI_CONNECTED_BIT | WIFI_HAS_IP_BIT, pdFALSE, pdTRUE, pdMS_TO_TICKS(30000));
     if (!(bits & WIFI_HAS_IP_BIT)) {
-        PRINTFC_MAIN("Wi-Fi connection timeout. Exiting.");
+        PRINTFC_WIFI_HANDLER("Wi-Fi connection timeout. Exiting.");
         return;
     }
-    PRINTFC_MAIN("Wi-Fi connected and IP acquired.");
+    PRINTFC_WIFI_HANDLER("Wi-Fi connected and IP acquired.");
     
 }
