@@ -135,6 +135,24 @@ static void init_peripherals() {
     configure_buzzer_pwm();
 }
 
+static void check_alarm_conditions() {
+    float temp = 0.0f, hum = 0.0f;
+    float poti_temp = get_poti_temp();
+    esp_err_t result = dht_read_float_data(DHT_TYPE, DHT_GPIO, &hum, &temp);
+
+    if ((result == ESP_OK && temp >= DHT_LARM_THRESHOLD) || (poti_temp >= POTI_LARM_THRESHOLD)) {
+        fire_alarm("Brandrisk");
+    } else {
+        gpio_set_level(RED_LED_GPIO, 0);
+        gpio_set_level(GREEN_LED_GPIO, 1);
+        vTaskDelay(pdMS_TO_TICKS(500));
+        gpio_set_level(GREEN_LED_GPIO, 0);
+        vTaskDelay(pdMS_TO_TICKS(500));
+        ESP_LOGI(TAG, "✅ Allt OK – ingen brandrisk");
+        strcpy(system_status, "OK");
+    }
+}
+
 static esp_err_t initialize_wifi() {
     wifi_event_group = xEventGroupCreate();
     if (wifi_event_group == NULL) {
