@@ -88,7 +88,7 @@ static void buzzer_off() {
 
 static float get_poti_temp() {
     int raw = adc1_get_raw(POTENTIOMETER_ADC_CHANNEL);
-    ESP_LOGI(TAG, "🎛️ Poti råvärde: %d", raw);
+    PRINTFC_MAIN("Poti råvärde: %d", raw);
     if (raw < ADC_THRESHOLD_MIN) return -1.0f;
     return TEMP_MIN + ((float)raw / 4095.0f) * (TEMP_MAX - TEMP_MIN);
 }
