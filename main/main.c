@@ -130,6 +130,10 @@ static void fire_alarm(const char *reason) {
     gpio_set_level(RED_LED_GPIO, 0);
 }
 
+static void init_peripherals() {
+    configure_gpio();
+    configure_buzzer_pwm();
+}
 
 static esp_err_t initialize_wifi() {
     wifi_event_group = xEventGroupCreate();
