@@ -64,3 +64,28 @@ void ds18b20_init(gpio_num_t gpio) {
     gpio_reset_pin(ds_pin);   // Säkerställ att pinnen är i grundläge
     gpio_set_pull_mode(ds_pin, GPIO_PULLUP_ONLY); // DS18B20 kräver pull-up motstånd
 }
+// Huvudfunktion för att läsa temperatur från sensor
+float ds18b20_get_temp() {
+    if (!ds_reset()) { 
+        PRINTFC_DS18B20("Ingen sensor hittad"); // Sensor svarade inte
+        return -100.0f; // Returnera felvärde
+    }
+
+    ds_write_byte(0xCC);  // Skip ROM – adressera alla sensorer
+    ds_write_byte(0x44);  // Starta temperaturkonvertering
+    vTaskDelay(pdMS_TO_TICKS(750));  // Vänta på konvertering (~750 ms)
+
+    if (!ds_reset()) {
+        PRINTFC_DS18B20("Ingen sensor efter konvertering");
+        return -100.0f;
+    }
+
+    ds_write_byte(0xCC);  // Skip ROM igen
+    ds_write_byte(0xBE);  // Läs scratchpad (där temperaturen lagras)
+
+    uint8_t temp_lsb = ds_read_byte(); // Lägsta byte av temperaturen
+    uint8_t temp_msb = ds_read_byte(); // Högsta byte
+    int16_t temp_raw = (temp_msb << 8) | temp_lsb; // Kombinera till 16-bit värde
+
+    return (float)temp_raw / 16.0; // Omvandla till grader Celsius
+}
