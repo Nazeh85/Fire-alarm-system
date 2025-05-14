@@ -76,6 +76,16 @@ static void configure_buzzer_pwm() {
     ledc_channel_config(&channel);
 }
 
+static void buzzer_on() {
+    ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, BUZZER_DUTY);
+    ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0);
+}
+
+static void buzzer_off() {
+    ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, 0);
+    ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0);
+}
+
 static esp_err_t initialize_wifi() {
     wifi_event_group = xEventGroupCreate();
     if (wifi_event_group == NULL) {
