@@ -42,3 +42,19 @@ static int ds_read_bit() {
     ds18b20_delay_us(55);
     return bit;
 }
+// Skriver en hel byte till sensorn, bit för bit
+static void ds_write_byte(uint8_t byte) {
+    for (int i = 0; i < 8; i++) {
+        ds_write_bit(byte & (1 << i)); // Skicka varje bit individuellt (LSB först)
+    }
+}
+// Läser en hel byte från sensorn, bit för bit
+static uint8_t ds_read_byte() {
+    uint8_t byte = 0;
+    for (int i = 0; i < 8; i++) {
+        if (ds_read_bit()) {
+            byte |= (1 << i);
+        }
+    }
+    return byte;
+}
