@@ -18,7 +18,13 @@
 #define RED_LED_GPIO 25
 #define GREEN_LED_GPIO 26
 #define BUZZER_GPIO 27
+#define DS18B20_GPIO 19
+#define BUTTON_GPIO 4
+#define POTENTIOMETER_ADC_CHANNEL ADC_CHANNEL_6 // GPIO34
 
+#define BUZZER_PWM_FREQ 3000
+#define BUZZER_DUTY 512
+#define ALARM_COOLDOWN_MS 15000
 // Globala variabler
 EventGroupHandle_t wifi_event_group;
 wifi_init_param_t w_param = {
