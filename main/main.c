@@ -93,6 +93,12 @@ static float get_poti_temp() {
     return TEMP_MIN + ((float)raw / 4095.0f) * (TEMP_MAX - TEMP_MIN);
 }
 
+static float get_ds18b20_temp() {
+    float temperature = ds18b20_get_temp();
+    PRINTFC_DS18B20I("DS18B20 Temperatur: %.2f C", temperature);
+    return temperature;
+}
+
 
 static esp_err_t initialize_wifi() {
     wifi_event_group = xEventGroupCreate();
