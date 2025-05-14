@@ -138,20 +138,28 @@ static void init_peripherals() {
 static void check_alarm_conditions() {
     float temp = 0.0f, hum = 0.0f;
     float poti_temp = get_poti_temp();
+    float ds_temp = get_ds18b20_temp();
     esp_err_t result = dht_read_float_data(DHT_TYPE, DHT_GPIO, &hum, &temp);
 
-    if ((result == ESP_OK && temp >= DHT_LARM_THRESHOLD) || (poti_temp >= POTI_LARM_THRESHOLD)) {
-        fire_alarm("Brandrisk");
+    if (result == ESP_OK) {
+        PRINTFC_DHT("DHT22 Temperatur: %.2f C", temp);
+
+        if (temp >= DHT_LARM_THRESHOLD || poti_temp >= POTI_LARM_THRESHOLD) {
+            fire_alarm("Brandrisk");
+        } else {
+            gpio_set_level(RED_LED_GPIO, 0);
+            gpio_set_level(GREEN_LED_GPIO, 1);
+            vTaskDelay(pdMS_TO_TICKS(500));
+            gpio_set_level(GREEN_LED_GPIO, 0);
+            vTaskDelay(pdMS_TO_TICKS(500));
+            PRINTFC_DHT("✅ Allt OK – ingen brandrisk");
+            strcpy(system_status, "OK");
+        }
     } else {
-        gpio_set_level(RED_LED_GPIO, 0);
-        gpio_set_level(GREEN_LED_GPIO, 1);
-        vTaskDelay(pdMS_TO_TICKS(500));
-        gpio_set_level(GREEN_LED_GPIO, 0);
-        vTaskDelay(pdMS_TO_TICKS(500));
-        ESP_LOGI(TAG, "✅ Allt OK – ingen brandrisk");
-        strcpy(system_status, "OK");
+        PRINTFC_DHT("🚫 DHT22 kunde inte läsas – kontrollera anslutning");
     }
 }
+
 
 static esp_err_t initialize_wifi() {
     wifi_event_group = xEventGroupCreate();
