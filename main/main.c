@@ -12,6 +12,7 @@
 #include "esp_event.h"
 #include "dht.h"
 #include "ds18b20.h"
+#include "driver/ledc.h"
 
 #define DHT_GPIO 18
 #define DHT_TYPE DHT_TYPE_DHT22
@@ -53,6 +54,26 @@ static void configure_gpio()
     adc1_config_channel_atten(POTENTIOMETER_ADC_CHANNEL, ADC_ATTEN_DB_11);
 
     ds18b20_init(DS18B20_GPIO);
+}
+static void configure_buzzer_pwm() {
+    ledc_timer_config_t timer = {
+        .speed_mode = LEDC_LOW_SPEED_MODE,
+        .timer_num = LEDC_TIMER_0,
+        .duty_resolution = LEDC_TIMER_10_BIT,
+        .freq_hz = BUZZER_PWM_FREQ,
+        .clk_cfg = LEDC_AUTO_CLK,
+    };
+    ledc_timer_config(&timer);
+
+    ledc_channel_config_t channel = {
+        .channel = LEDC_CHANNEL_0,
+        .duty = 0,
+        .gpio_num = BUZZER_GPIO,
+        .speed_mode = LEDC_LOW_SPEED_MODE,
+        .hpoint = 0,
+        .timer_sel = LEDC_TIMER_0,
+    };
+    ledc_channel_config(&channel);
 }
 
 static esp_err_t initialize_wifi() {
