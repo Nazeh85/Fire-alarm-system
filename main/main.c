@@ -99,6 +99,37 @@ static float get_ds18b20_temp() {
     return temperature;
 }
 
+static void fire_alarm(const char *reason) {
+    static TickType_t last_alarm = 0;
+    if (xTaskGetTickCount() - last_alarm < pdMS_TO_TICKS(ALARM_COOLDOWN_MS)) return;
+    last_alarm = xTaskGetTickCount();
+
+    PRINTFC_DHT("LARM AKTIVERAT: %s", reason);
+    strcpy(system_status, "LARM");
+    alarm_active = true;
+
+    for (int i = 0; i < 50; i++) {
+        if (gpio_get_level(BUTTON_GPIO) == 0) {
+            vTaskDelay(pdMS_TO_TICKS(50));
+            if (gpio_get_level(BUTTON_GPIO) == 0) {
+                PRINTFC_DHT("Larm stoppat manuellt!");
+                alarm_active = false;
+                strcpy(system_status, "OK");
+                break;
+            }
+        }
+        buzzer_on();
+        gpio_set_level(RED_LED_GPIO, 1);
+        vTaskDelay(pdMS_TO_TICKS(200));
+        buzzer_off();
+        gpio_set_level(RED_LED_GPIO, 0);
+        vTaskDelay(pdMS_TO_TICKS(200));
+    }
+
+    buzzer_off();
+    gpio_set_level(RED_LED_GPIO, 0);
+}
+
 
 static esp_err_t initialize_wifi() {
     wifi_event_group = xEventGroupCreate();
