@@ -58,3 +58,9 @@ static uint8_t ds_read_byte() {
     }
     return byte;
 }
+// Initierar sensorn med angiven GPIO
+void ds18b20_init(gpio_num_t gpio) {
+    ds_pin = gpio;
+    gpio_reset_pin(ds_pin);   // Säkerställ att pinnen är i grundläge
+    gpio_set_pull_mode(ds_pin, GPIO_PULLUP_ONLY); // DS18B20 kräver pull-up motstånd
+}
