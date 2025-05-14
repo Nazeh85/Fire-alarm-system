@@ -86,6 +86,14 @@ static void buzzer_off() {
     ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0);
 }
 
+static float get_poti_temp() {
+    int raw = adc1_get_raw(POTENTIOMETER_ADC_CHANNEL);
+    ESP_LOGI(TAG, "🎛️ Poti råvärde: %d", raw);
+    if (raw < ADC_THRESHOLD_MIN) return -1.0f;
+    return TEMP_MIN + ((float)raw / 4095.0f) * (TEMP_MAX - TEMP_MIN);
+}
+
+
 static esp_err_t initialize_wifi() {
     wifi_event_group = xEventGroupCreate();
     if (wifi_event_group == NULL) {
