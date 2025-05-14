@@ -32,6 +32,9 @@ wifi_init_param_t w_param = {
     .password = CONFIG_WIFI_PASSWORD,
 };
 
+static char system_status[5] = "OK";
+static bool alarm_active = false;
+
 static void configure_gpio()
 {
     gpio_reset_pin(RED_LED_GPIO);
