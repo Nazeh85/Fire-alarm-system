@@ -11,6 +11,7 @@
 #include "driver/gpio.h"
 #include "esp_event.h"
 #include "dht.h"
+#include "ds18b20.h"
 
 #define DHT_GPIO 18
 #define DHT_TYPE DHT_TYPE_DHT22
@@ -39,12 +40,19 @@ static void configure_gpio()
 {
     gpio_reset_pin(RED_LED_GPIO);
     gpio_set_direction(RED_LED_GPIO, GPIO_MODE_OUTPUT);
+    
 
     gpio_reset_pin(GREEN_LED_GPIO);
     gpio_set_direction(GREEN_LED_GPIO, GPIO_MODE_OUTPUT);
 
-    gpio_reset_pin(BUZZER_GPIO);
-    gpio_set_direction(BUZZER_GPIO, GPIO_MODE_OUTPUT);
+    gpio_reset_pin(BUTTON_GPIO);
+    gpio_set_direction(BUTTON_GPIO, GPIO_MODE_INPUT);
+    gpio_set_pull_mode(BUTTON_GPIO, GPIO_PULLUP_ONLY);
+
+    adc1_config_width(ADC_WIDTH_BIT_12);
+    adc1_config_channel_atten(POTENTIOMETER_ADC_CHANNEL, ADC_ATTEN_DB_11);
+
+    ds18b20_init(DS18B20_GPIO);
 }
 
 static esp_err_t initialize_wifi() {
