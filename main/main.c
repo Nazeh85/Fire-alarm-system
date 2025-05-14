@@ -172,79 +172,21 @@ static esp_err_t initialize_wifi() {
     return ESP_OK;
 }
 
-void app_main(void)
-{
-    PRINTFC_MAIN("Initializing NVS...");
-    esp_err_t ret = nvs_flash_init();
-    if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
-        ESP_ERROR_CHECK(nvs_flash_erase());
-        ret = nvs_flash_init();
+void app_main(void) {
+
+    ESP_ERROR_CHECK(nvs_flash_init());
+
+    if (initialize_wifi() != ESP_OK) return;
+
+    EventBits_t bits = xEventGroupWaitBits(wifi_event_group,
+        WIFI_CONNECTED_BIT | WIFI_HAS_IP_BIT, pdFALSE, pdTRUE, pdMS_TO_TICKS(30000));
+
+    if (!(bits & WIFI_HAS_IP_BIT)) return;
+
+    init_peripherals();
+
+    while (1) {
+        check_alarm_conditions();
+        vTaskDelay(pdMS_TO_TICKS(10000));
     }
-    ESP_ERROR_CHECK(ret);
-
-    PRINTFC_WIFI_HANDLER("Wi-Fi Initialization");
-    if (initialize_wifi() != ESP_OK) {
-        return;
-    }
-
-    PRINTFC_WIFI_HANDLER("Waiting for Wi-Fi connection...");
-    EventBits_t bits = xEventGroupWaitBits(
-        wifi_event_group, WIFI_CONNECTED_BIT | WIFI_HAS_IP_BIT, pdFALSE, pdTRUE, pdMS_TO_TICKS(30000));
-    if (!(bits & WIFI_HAS_IP_BIT)) {
-        PRINTFC_WIFI_HANDLER("Wi-Fi connection timeout. Exiting.");
-        return;
-    }
-    PRINTFC_WIFI_HANDLER("Wi-Fi connected and IP acquired.");
-    configure_gpio();
-
-    while (1)
-    {
-        float temperature = 0;
-        float humidity = 0;
-        esp_err_t result;
-        int retries = 3;
-
-        float temp_threshold = 25.0f;
-
-        while (retries-- > 0)
-        {
-            result = dht_read_float_data(DHT_TYPE, DHT_GPIO, &humidity, &temperature);
-            if (result == ESP_OK)
-                break;
-            vTaskDelay(pdMS_TO_TICKS(500));
-        }
-
-        if (result == ESP_OK)
-        {
-            PRINTFC_DHT("Temperatur: %.1f°C | Luftfuktighet: %.1f%% | Tröskel: %.1f°C", temperature, humidity, temp_threshold);
-
-            if (temperature >= temp_threshold)
-            {
-                gpio_set_level(RED_LED_GPIO, 1);
-                gpio_set_level(BUZZER_GPIO, 1);
-                gpio_set_level(GREEN_LED_GPIO, 0);
-
-                PRINTFC_DHT("LARM TRIGGAT! Temperatur: %.1f°C >= Tröskel: %.1f°C", temperature, temp_threshold);
-            }
-            else
-            {
-                gpio_set_level(RED_LED_GPIO, 0);
-                gpio_set_level(BUZZER_GPIO, 0);
-
-                gpio_set_level(GREEN_LED_GPIO, 1);
-                vTaskDelay(pdMS_TO_TICKS(500));
-                gpio_set_level(GREEN_LED_GPIO, 0);
-                vTaskDelay(pdMS_TO_TICKS(500));
-
-                PRINTFC_DHT("Temperatur OK (%.1f°C < %.1f°C) – Larm AV", temperature, temp_threshold);
-            }
-        }
-        else
-        {
-            PRINTFC_DHT("Sensor read failed after retries: %s", esp_err_to_name(result));
-        }
-
-        vTaskDelay(pdMS_TO_TICKS(2000));
-    }
-        
-    }
+}
