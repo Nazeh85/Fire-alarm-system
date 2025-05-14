@@ -1,33 +1,41 @@
 #include <stdio.h>
-#include "string.h"
+#include <string.h>
+#include <math.h>
 #include "esp_log.h"
+#include "esp_system.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/event_groups.h"
-#include "wifi_handler.h"
-#include "nvs_flash.h"
-#include "color.h"
-#include "esp_system.h"
 #include "freertos/task.h"
 #include "driver/gpio.h"
+#include "driver/adc.h"
+#include "driver/ledc.h"
+#include "wifi_handler.h"
+#include "nvs_flash.h"
 #include "esp_event.h"
+#include "esp_wifi.h"
 #include "dht.h"
 #include "ds18b20.h"
-#include "driver/ledc.h"
+#include "color.h"
 
 #define DHT_GPIO 18
 #define DHT_TYPE DHT_TYPE_DHT22
-
+#define DS18B20_GPIO 19
 #define RED_LED_GPIO 25
 #define GREEN_LED_GPIO 26
 #define BUZZER_GPIO 27
-#define DS18B20_GPIO 19
 #define BUTTON_GPIO 4
 #define POTENTIOMETER_ADC_CHANNEL ADC_CHANNEL_6 // GPIO34
+
+#define TEMP_MIN 20.0f
+#define TEMP_MAX 35.0f
+#define DHT_LARM_THRESHOLD 25.0f
+#define POTI_LARM_THRESHOLD 30.0f
+#define ADC_THRESHOLD_MIN 50
 
 #define BUZZER_PWM_FREQ 3000
 #define BUZZER_DUTY 512
 #define ALARM_COOLDOWN_MS 15000
-// Globala variabler
+
 EventGroupHandle_t wifi_event_group;
 wifi_init_param_t w_param = {
     .ssid = CONFIG_WIFI_SSID,
@@ -37,15 +45,11 @@ wifi_init_param_t w_param = {
 static char system_status[5] = "OK";
 static bool alarm_active = false;
 
-static void configure_gpio()
-{
+static void configure_gpio() {
     gpio_reset_pin(RED_LED_GPIO);
     gpio_set_direction(RED_LED_GPIO, GPIO_MODE_OUTPUT);
-    
-
     gpio_reset_pin(GREEN_LED_GPIO);
     gpio_set_direction(GREEN_LED_GPIO, GPIO_MODE_OUTPUT);
-
     gpio_reset_pin(BUTTON_GPIO);
     gpio_set_direction(BUTTON_GPIO, GPIO_MODE_INPUT);
     gpio_set_pull_mode(BUTTON_GPIO, GPIO_PULLUP_ONLY);
@@ -55,6 +59,7 @@ static void configure_gpio()
 
     ds18b20_init(DS18B20_GPIO);
 }
+
 static void configure_buzzer_pwm() {
     ledc_timer_config_t timer = {
         .speed_mode = LEDC_LOW_SPEED_MODE,
@@ -95,7 +100,7 @@ static float get_poti_temp() {
 
 static float get_ds18b20_temp() {
     float temperature = ds18b20_get_temp();
-    PRINTFC_DS18B20I("DS18B20 Temperatur: %.2f C", temperature);
+    PRINTFC_DS18B20("DS18B20 Temperatur: %.2f C", temperature);
     return temperature;
 }
 
@@ -130,6 +135,14 @@ static void fire_alarm(const char *reason) {
     gpio_set_level(RED_LED_GPIO, 0);
 }
 
+static esp_err_t initialize_wifi() {
+    wifi_event_group = xEventGroupCreate();
+    if (!wifi_event_group) return ESP_FAIL;
+    w_param.wifi_event_group = wifi_event_group;
+    wifi_handler_start(&w_param);
+    return ESP_OK;
+}
+
 static void init_peripherals() {
     configure_gpio();
     configure_buzzer_pwm();
@@ -158,18 +171,6 @@ static void check_alarm_conditions() {
     } else {
         PRINTFC_DHT("🚫 DHT22 kunde inte läsas – kontrollera anslutning");
     }
-}
-
-
-static esp_err_t initialize_wifi() {
-    wifi_event_group = xEventGroupCreate();
-    if (wifi_event_group == NULL) {
-        PRINTFC_WIFI_HANDLER("Failed to create Wi-Fi event group");
-        return ESP_FAIL;
-    }
-    w_param.wifi_event_group = wifi_event_group;
-    wifi_handler_start(&w_param);
-    return ESP_OK;
 }
 
 void app_main(void) {
