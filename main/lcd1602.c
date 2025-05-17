@@ -1,5 +1,6 @@
 #include "driver/i2c.h"
 #include "freertos/task.h"
+#include "lcd1602.h"
 
 #define I2C_MASTER_NUM I2C_NUM_0  // I2C port number for the master device
 #define LCD_BACKLIGHT 0x08        // Backlight bit for the LCD
