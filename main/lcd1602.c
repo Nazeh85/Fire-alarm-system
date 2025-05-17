@@ -24,3 +24,20 @@ static void lcd_write_byte(uint8_t addr, uint8_t value, uint8_t mode) {
     lcd_send_nibble(addr, value >> 4, mode);  // Send high nibble
     lcd_send_nibble(addr, value & 0x0F, mode); // Send low nibble
 }
+
+void lcd1602_init(uint8_t addr) {
+    vTaskDelay(pdMS_TO_TICKS(50)); // Initial delay
+    lcd_send_nibble(addr, 0x03, COMMAND); // Send initialization command
+    vTaskDelay(pdMS_TO_TICKS(5));         // Wait for a bit
+    lcd_send_nibble(addr, 0x03, COMMAND); // Repeat initialization
+    vTaskDelay(pdMS_TO_TICKS(5));         // Wait for a bit
+    lcd_send_nibble(addr, 0x03, COMMAND); // Repeat initialization
+    vTaskDelay(pdMS_TO_TICKS(5));         // Wait for a bit
+    lcd_send_nibble(addr, 0x02, COMMAND); // Set 4-bit mode
+
+    lcd_write_byte(addr, 0x28, COMMAND); // Set 2-line display
+    lcd_write_byte(addr, 0x0C, COMMAND); // Display ON, cursor OFF
+    lcd_write_byte(addr, 0x06, COMMAND); // Entry mode
+    lcd_write_byte(addr, 0x01, COMMAND); // Clear display
+    vTaskDelay(pdMS_TO_TICKS(2));        // Wait for clear display to finish
+}
