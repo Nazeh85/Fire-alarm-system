@@ -19,3 +19,8 @@ static void lcd_send_nibble(uint8_t addr, uint8_t nibble, uint8_t mode) {
     i2c_cmd_link_delete(cmd);                          // Delete command handle
     vTaskDelay(pdMS_TO_TICKS(1));                      // Small delay
 }
+
+static void lcd_write_byte(uint8_t addr, uint8_t value, uint8_t mode) {
+    lcd_send_nibble(addr, value >> 4, mode);  // Send high nibble
+    lcd_send_nibble(addr, value & 0x0F, mode); // Send low nibble
+}
