@@ -41,3 +41,8 @@ void lcd1602_init(uint8_t addr) {
     lcd_write_byte(addr, 0x01, COMMAND); // Clear display
     vTaskDelay(pdMS_TO_TICKS(2));        // Wait for clear display to finish
 }
+
+void lcd1602_clear(uint8_t addr) {
+    lcd_write_byte(addr, 0x01, COMMAND);  // Send clear display command
+    vTaskDelay(pdMS_TO_TICKS(2));         // Wait for the command to finish
+}
