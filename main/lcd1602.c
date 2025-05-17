@@ -46,3 +46,8 @@ void lcd1602_clear(uint8_t addr) {
     lcd_write_byte(addr, 0x01, COMMAND);  // Send clear display command
     vTaskDelay(pdMS_TO_TICKS(2));         // Wait for the command to finish
 }
+
+void lcd1602_gotoxy(uint8_t addr, uint8_t col, uint8_t row) {
+    const uint8_t row_offsets[] = {0x00, 0x40}; // Row addresses
+    lcd_write_byte(addr, 0x80 | (col + row_offsets[row]), COMMAND); // Set cursor position
+}
