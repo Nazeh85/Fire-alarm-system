@@ -51,3 +51,9 @@ void lcd1602_gotoxy(uint8_t addr, uint8_t col, uint8_t row) {
     const uint8_t row_offsets[] = {0x00, 0x40}; // Row addresses
     lcd_write_byte(addr, 0x80 | (col + row_offsets[row]), COMMAND); // Set cursor position
 }
+
+void lcd1602_write_string(uint8_t addr, const char *str) {
+    while (*str) {
+        lcd_write_byte(addr, *str++, DATA); // Write each character
+    }
+}
