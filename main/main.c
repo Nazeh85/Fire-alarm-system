@@ -16,6 +16,8 @@
 #include "dht.h"
 #include "ds18b20.h"
 #include "color.h"
+#include "lcd1602.h"  
+#include "driver/i2c.h"
 
 #define DHT_GPIO 18
 #define DHT_TYPE DHT_TYPE_DHT22
@@ -25,6 +27,10 @@
 #define BUZZER_GPIO 27
 #define BUTTON_GPIO 4
 #define POTENTIOMETER_ADC_CHANNEL ADC_CHANNEL_6 // GPIO34
+
+#define I2C_MASTER_SDA_IO 21
+#define I2C_MASTER_SCL_IO 22
+#define LCD_ADDR 0x27
 
 #define TEMP_MIN 20.0f
 #define TEMP_MAX 35.0f
@@ -44,6 +50,7 @@ wifi_init_param_t w_param = {
 
 static char system_status[5] = "OK";
 static bool alarm_active = false;
+static TickType_t last_ok_display = 0;
 
 static void configure_gpio() {
     gpio_reset_pin(RED_LED_GPIO);
@@ -104,6 +111,28 @@ static float get_ds18b20_temp() {
     return temperature;
 }
 
+static void update_lcd_temp_display() {
+    char line1[17], line2[17];
+    float temp_dht = 0.0f, hum = 0.0f, temp_ds = get_ds18b20_temp();
+    if (dht_read_float_data(DHT_TYPE, DHT_GPIO, &hum, &temp_dht) == ESP_OK) {
+        snprintf(line1, sizeof(line1), "Inne: %.1f C", temp_dht);
+        snprintf(line2, sizeof(line2), "Ute: %.1f C", temp_ds);
+        lcd1602_clear(LCD_ADDR);
+        lcd1602_gotoxy(LCD_ADDR, 0, 0);
+        lcd1602_write_string(LCD_ADDR, line1);
+        lcd1602_gotoxy(LCD_ADDR, 0, 1);
+        lcd1602_write_string(LCD_ADDR, line2);
+    }
+}
+
+static void show_ok_message() {
+    lcd1602_clear(LCD_ADDR);
+    lcd1602_gotoxy(LCD_ADDR, 0, 0);
+    lcd1602_write_string(LCD_ADDR, "Ingen brandrisk");
+    lcd1602_gotoxy(LCD_ADDR, 0, 1);
+    lcd1602_write_string(LCD_ADDR, "Ingen brandrisk");
+}
+
 static void fire_alarm(const char *reason) {
     static TickType_t last_alarm = 0;
     if (xTaskGetTickCount() - last_alarm < pdMS_TO_TICKS(ALARM_COOLDOWN_MS)) return;
@@ -113,6 +142,12 @@ static void fire_alarm(const char *reason) {
     strcpy(system_status, "LARM");
     alarm_active = true;
 
+    lcd1602_clear(LCD_ADDR);
+    lcd1602_gotoxy(LCD_ADDR, 0, 0);
+    lcd1602_write_string(LCD_ADDR, "LARM AKTIVT");
+    lcd1602_gotoxy(LCD_ADDR, 0, 1);
+    lcd1602_write_string(LCD_ADDR, reason);
+
     for (int i = 0; i < 50; i++) {
         if (gpio_get_level(BUTTON_GPIO) == 0) {
             vTaskDelay(pdMS_TO_TICKS(50));
@@ -120,6 +155,7 @@ static void fire_alarm(const char *reason) {
                 PRINTFC_DHT("Larm stoppat manuellt!");
                 alarm_active = false;
                 strcpy(system_status, "OK");
+                update_lcd_temp_display();
                 break;
             }
         }
@@ -143,15 +179,48 @@ static esp_err_t initialize_wifi() {
     return ESP_OK;
 }
 
+static void lcd_task(void *pvParameter) {
+    while (1) {
+        if (!alarm_active) {
+            TickType_t now = xTaskGetTickCount();
+            if (now - last_ok_display >= pdMS_TO_TICKS(30000)) {
+                show_ok_message();
+                vTaskDelay(pdMS_TO_TICKS(3000));
+                last_ok_display = now;
+            }
+            update_lcd_temp_display();
+        }
+        vTaskDelay(pdMS_TO_TICKS(1000));
+    }
+}
+
 static void init_peripherals() {
     configure_gpio();
     configure_buzzer_pwm();
+
+    // ✅ Lägg till I2C + LCD
+    i2c_config_t conf = {
+        .mode = I2C_MODE_MASTER,
+        .sda_io_num = I2C_MASTER_SDA_IO,
+        .scl_io_num = I2C_MASTER_SCL_IO,
+        .sda_pullup_en = GPIO_PULLUP_ENABLE,
+        .scl_pullup_en = GPIO_PULLUP_ENABLE,
+        .master.clk_speed = 100000
+    };
+    ESP_ERROR_CHECK(i2c_param_config(I2C_NUM_0, &conf));
+    ESP_ERROR_CHECK(i2c_driver_install(I2C_NUM_0, conf.mode, 0, 0, 0));
+    lcd1602_init(LCD_ADDR);
+    lcd1602_clear(LCD_ADDR);
 }
 
 static void check_alarm_conditions() {
-    float temp = 0.0f, hum = 0.0f;
-    float poti_temp = get_poti_temp();
-    float ds_temp = get_ds18b20_temp();
+    static TickType_t last_dht_read = 0;
+float temp = 0.0f, hum = 0.0f;
+float poti_temp = get_poti_temp();
+float ds_temp = get_ds18b20_temp();
+
+if (xTaskGetTickCount() - last_dht_read >= pdMS_TO_TICKS(2500)) {
+    last_dht_read = xTaskGetTickCount();
     esp_err_t result = dht_read_float_data(DHT_TYPE, DHT_GPIO, &hum, &temp);
 
     if (result == ESP_OK) {
@@ -172,9 +241,13 @@ static void check_alarm_conditions() {
         PRINTFC_DHT("🚫 DHT22 kunde inte läsas – kontrollera anslutning");
     }
 }
+}
+
+static void start_tasks() {
+    xTaskCreate(lcd_task, "lcd_task", 4096, NULL, 5, NULL);
+}
 
 void app_main(void) {
-
     ESP_ERROR_CHECK(nvs_flash_init());
 
     if (initialize_wifi() != ESP_OK) return;
@@ -185,6 +258,7 @@ void app_main(void) {
     if (!(bits & WIFI_HAS_IP_BIT)) return;
 
     init_peripherals();
+    start_tasks();
 
     while (1) {
         check_alarm_conditions();
